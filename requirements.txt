@@ -1,0 +1,13 @@
+# Core dependencies for gemini_reader.py (works on Mac and Raspberry Pi)
+google-genai
+pydantic
+opencv-python
+
+# Legacy pipeline (reader_main.py / ocr_backend.py) — uncomment if needed
+# rapidocr
+# onnxruntime
+# requests
+
+# Raspberry Pi only — do NOT pip-install on Mac; on the Pi these come from apt:
+#   sudo apt install python3-picamera2 python3-rpi.gpio
+# (create the venv with --system-site-packages on the Pi so they're visible)
