@@ -48,6 +48,8 @@ BRAILLE_CHAR_DELAY  = 1.2       # seconds each character stays raised
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
+BRAILLE_MODE = "naive"
+
 # ─── Shared state ─────────────────────────────────────────────────────────────
 state_lock      = threading.Lock()
 latest_view     = None
@@ -164,7 +166,7 @@ def run(camera_index=0, camera_port=8000, viz_port=8001, backend_name=OCR_BACKEN
     backend = build_backend(backend_name)
     print(f"[OCR] using backend: {backend_name}")
 
-    controller = BrailleController()
+    controller = BrailleController(mode=BRAILLE_MODE)
     braille_stop = threading.Event()
     braille_thread = threading.Thread(target=braille_worker,
                                        args=(controller, braille_stop), daemon=True)
