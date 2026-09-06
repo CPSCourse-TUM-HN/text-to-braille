@@ -159,6 +159,30 @@ def braille_worker(controller, stop):
         controller.display_string(line, delay=BRAILLE_CHAR_DELAY)
         controller.clear_cell()
 
+def preprocess_frame(bgr_frame, upscale_if_small=False):
+    # Deskew
+    gray = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2GRAY)
+    coords = cv2.findNonZero(cv2.threshold(gray, 0, 255,
+                cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1])
+    angle = cv2.minAreaRect(coords)[-1]
+    angle = -(90 + angle) if angle < -45 else -angle
+    (h, w) = bgr_frame.shape[:2]
+    M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
+    deskewed = cv2.warpAffine(bgr_frame, M, (w, h),
+                               flags=cv2.INTER_CUBIC,
+                               borderMode=cv2.BORDER_REPLICATE)
+
+    # CLAHE for uneven lighting
+    lab = cv2.cvtColor(deskewed, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    l = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(l)
+    enhanced = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+    if upscale_if_small and min(h, w) < 800:
+        enhanced = cv2.resize(enhanced, None, fx=1.5, fy=1.5,
+                               interpolation=cv2.INTER_CUBIC)
+    return enhanced
+
 # ─── Main loop ─────────────────────────────────────────────────────────────────
 def run(camera_index=0, camera_port=8000, viz_port=8001, backend_name=OCR_BACKEND_NAME):
     global latest_view, last_result, last_warning, current_status
@@ -200,6 +224,7 @@ def run(camera_index=0, camera_port=8000, viz_port=8001, backend_name=OCR_BACKEN
                         last_capture_t = now
                         current_status = "recognizing..."
                         main_bgr = request.make_array("main")
+                        main_bgr = preprocess_frame(main_bgr, upscale_if_small=True)
                         text, edge_touched, error = backend.recognize(main_bgr)
                         with state_lock:
                             if error:
