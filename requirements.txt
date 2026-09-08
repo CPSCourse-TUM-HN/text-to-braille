@@ -1,9 +1,3 @@
-# Core dependencies for gemini_reader.py (works on Mac and Raspberry Pi)
-#google-genai
-#pydantic
-#opencv-python
-
-
 rapidocr
 onnxruntime
 requests
